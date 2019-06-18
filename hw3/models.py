@@ -147,6 +147,7 @@ class ConvClassifier(nn.Module):
         # ====== YOUR CODE: ======
         f = self.feature_extractor(x)
         f = f.reshape(x.shape[0],-1) #a bit naibourhood as conv layers work on tensors per sample, and fc on vectors
+        #print(f.shape)
         out = self.classifier(f)
         # ========================
         return out
@@ -210,9 +211,7 @@ class YourCodeNet(ConvClassifier):
         in_features = (in_features ** 2) * self.filters[-1]  # this matrix will be flattened
         for i, dim in enumerate(self.hidden_dims):
             layers.append(torch.nn.Linear(in_features, dim))
-            layers.append(nn.BatchNorm1d(dim))
             layers.append(torch.nn.ReLU())
-            #layers.append(torch.nn.LeakyReLU())
             layers.append(torch.nn.Dropout(self.p))
             in_features = dim
         layers.append(torch.nn.Linear(in_features, self.out_classes))
