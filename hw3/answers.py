@@ -279,7 +279,20 @@ def part6_gan_hyperparams():
     )
     # TODO: Tweak the hyperparameters to train your GAN.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    hypers['batch_size'] = 64
+    hypers['z_dim'] = 128
+    hypers['data_label'] = 1
+    hypers['label_noise'] = 0.2
+    
+    hypers['discriminator_optimizer']['type'] = 'Adam'
+    hypers['discriminator_optimizer']['lr'] = 0.0002
+    hypers['discriminator_optimizer']['weight_decay'] = 0.02
+    hypers['discriminator_optimizer']['betas'] = (0.5, 0.999)
+    
+    hypers['generator_optimizer']['type'] = 'Adam'
+    hypers['generator_optimizer']['lr'] = 0.0002
+    hypers['generator_optimizer']['weight_decay'] = 0.02
+    hypers['generator_optimizer']['betas'] = (0.5, 0.999)
     # ========================
     return hypers
 
@@ -287,38 +300,48 @@ def part6_gan_hyperparams():
 part6_q1 = r"""
 **Your answer:**
 
+The loss of the generator as we defined it, is basically: "how much did we manage to fool the discriminator?"
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+Therefore, the gradients of the generators loss function are dependent on gradients calculated for the discriminators 
+loss function.
+
+When we train the discriminator, we obviously don't want it to affect the training of the generator, and vice versa.
+
+But, since for every batch (or several batches, up to us) we first train the discriminator and then the generator, 
+
+when we sample from the generator in order to train the discriminator, **we will need to discard the the gradients**.
+
+Otherwise, the training of the discriminator will impact the training of the generator!
 
 """
 
 part6_q2 = r"""
 **Your answer:**
 
+**1.**
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+No! the generators loss is not the only measurement of success: if our discriminator isn't doing a good job at 
+separating fake images from real images, the generator is not necessarily generating good images, but rather just doing
+whatever is necessary in order to full our discriminator.
+
+Therefore, we should stop the training only when **both losses** - the generators and the discriminators - are low. 
+
+**2.**
+
+It means that while we may not see any change in the discriminators loss- the discriminator keeps learning:
+
+Since we know our generators loss is getting lower - which means the generator is getting better at fulling the 
+discriminator, if our discriminator had stopped learning, then its loss should be going **down** and not staying stable.
+
+However, it is possible that our discriminator is not getting any better "separating" real and fake images, but 
+rather just at identifying real images as real: improving the classification on real images and decreasing the 
+classification on fake images. This could explain why the loss stays stable.
 
 """
 
 part6_q3 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+Not mandatory :)
 
 """
