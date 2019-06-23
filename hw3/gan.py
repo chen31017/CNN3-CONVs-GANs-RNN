@@ -22,7 +22,23 @@ class Discriminator(nn.Module):
         # You can then use either an affine layer or another conv layer to
         # flatten the features.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        extractor_modules = []
+
+        channels = [64, 128, 256]
+        in_channels, h, w = self.in_size
+
+        for out_channels in channels:
+            conv = nn.Conv2d(in_channels, out_channels, 5, padding=2, stride=1)
+            extractor_modules.extend([conv, nn.BatchNorm2d(out_channels), nn.MaxPool2d(2), nn.LeakyReLU(0.2)])
+            in_channels = out_channels
+
+        self.extractor = nn.Sequential(*extractor_modules)
+
+        h = h // (2 ** 3)
+        w = w // (2 ** 3)
+
+        classifier_modules = [nn.Linear(h * w * 256, h * w // 4), nn.ReLU(), nn.Dropout(0.2), nn.Linear(h * w // 4, 1)]
+        self.classifier = nn.Sequential(*classifier_modules)
         # ========================
 
     def forward(self, x):
@@ -35,7 +51,9 @@ class Discriminator(nn.Module):
         # No need to apply sigmoid to obtain probability - we'll combine it
         # with the loss due to improved numerical stability.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        x = self.extractor(x)
+        x = x.view(x.size(0), -1)
+        y = self.classifier(x)
         # ========================
         return y
 
@@ -56,7 +74,22 @@ class Generator(nn.Module):
         # section or implement something new.
         # You can assume a fixed image size.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        modules = []
+        channels = [512, 256, 128]
+        in_channel = 1024
+
+        conv = nn.ConvTranspose2d(self.z_dim, in_channel, featuremap_size, 2, 0, bias=False)
+        modules.extend([conv, nn.BatchNorm2d(in_channel), nn.ReLU()])
+
+        for out_channel in channels:
+            conv = nn.ConvTranspose2d(in_channel, out_channel, featuremap_size, 2, 1, bias=False)
+            modules.extend([conv, nn.BatchNorm2d(out_channel), nn.ReLU()])
+            in_channel = out_channel
+
+        conv = nn.ConvTranspose2d(in_channel, out_channels, featuremap_size, 2, 1, bias=False)
+        modules.extend([conv, nn.Tanh()])
+
+        self.generator = nn.Sequential(*modules)
         # ========================
 
     def sample(self, n, with_grad=False):
@@ -73,7 +106,9 @@ class Generator(nn.Module):
         # Generate n latent space samples and return their reconstructions.
         # Don't use a loop.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        with torch.set_grad_enabled(with_grad):
+            z = torch.randn((n, self.z_dim), device=device, requires_grad=with_grad)
+            samples = self.forward(z)
         # ========================
         return samples
 
@@ -87,7 +122,9 @@ class Generator(nn.Module):
         # Don't forget to make sure the output instances have the same scale
         # as the original (real) images.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        z = torch.unsqueeze(z, dim=2)
+        z = torch.unsqueeze(z, dim=3)
+        x = self.generator(z)
         # ========================
         return x
 
@@ -111,7 +148,12 @@ def discriminator_loss_fn(y_data, y_generated, data_label=0, label_noise=0.0):
     # TODO: Implement the discriminator loss.
     # See torch's BCEWithLogitsLoss for a numerically stable implementation.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    d = label_noise / 2
+    data_noise = label_noise * torch.rand_like(y_data, device=y_data.device) - d
+    generated_noise = label_noise * torch.rand_like(y_data, device=y_data.device) - d
+
+    loss_data = F.binary_cross_entropy_with_logits(y_data, data_label + data_noise)
+    loss_generated = F.binary_cross_entropy_with_logits(y_generated, 1 - data_label + generated_noise)
     # ========================
     return loss_data + loss_generated
 
@@ -130,7 +172,8 @@ def generator_loss_fn(y_generated, data_label=0):
     # Think about what you need to compare the input to, in order to
     # formulate the loss in terms of Binary Cross Entropy.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    label = torch.full(y_generated.size(), data_label, device=y_generated.device)
+    loss = F.binary_cross_entropy_with_logits(y_generated, label)
     # ========================
     return loss
 
@@ -150,7 +193,17 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     # 2. Calculate discriminator loss
     # 3. Update discriminator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    dsc_optimizer.zero_grad()
+
+    fake_data = gen_model.sample(x_data.shape[0], with_grad=True)
+
+    real_targets = dsc_model(x_data)
+    fake_targets = dsc_model(fake_data.detach())
+
+    dsc_loss = dsc_loss_fn(real_targets, fake_targets)
+    dsc_loss.backward()
+
+    dsc_optimizer.step()
     # ========================
 
     # TODO: Generator update
@@ -158,7 +211,14 @@ def train_batch(dsc_model: Discriminator, gen_model: Generator,
     # 2. Calculate generator loss
     # 3. Update generator parameters
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    gen_optimizer.zero_grad()
+
+    fake_targets = dsc_model(fake_data)
+
+    gen_loss = gen_loss_fn(fake_targets)
+    gen_loss.backward()
+
+    gen_optimizer.step()
     # ========================
 
     return dsc_loss.item(), gen_loss.item()
