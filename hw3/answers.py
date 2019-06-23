@@ -76,38 +76,50 @@ part3_q1 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+1. Surprisingly, the best results were yielded by the most shallow network (L2).
+This corresponds with with the fact that networks deeper than 4 layers were not trainable.
+In larger depth our model could not learn.
 
+This is probably due to the large amount of max pooling layers. Any region not contributing to the maximum value,
+Looses it's affect on the gradient.
+
+As there is a large number of such layer, it becomes very probable that values in the first layers of the network will
+Loose their affect on the gradient and thus will not learn. Another factor that might harm is a form of vanishing gradient:
+Though not as bad as in the case with the sigmoid function, dead ReLu's can also kill off gradients
+(all negative values are set by zero). When the network is deep, this can cause the higher layers
+to learn very slowly or as in our case- die off completely.
+
+Without addressing this problem, the more shallow networks have a bigger learning potential and thus yield better results.
+
+2. Yes, networks deeper than 4 did not learn.
+   As said above this is due to to pooling layers or dead ReLus.
+   Ways to address this problem is to use:
+        1. Use dropout (or skip connections as in Res-Nets) to give all values a chance to affect the gradient.
+        2. Use Leaky ReLu's to avoid killing non linearity.
+            
 """
+
 
 part3_q2 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+Test 1.2 yielded better results as we added more convolution filters which improved our feature extraction.
+In this test the better preformance was yielded by the 4 layer network with the 256 conv filters.
+The larger amount of filters added in two ways: it inhanced the feature extraction and since pooling layers don't affect
+the channel dimension it made our network train a bit better in deeper architectures, but again the 8 layer network did
+still could not learn.
 
 """
 
 part3_q3 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+As the additional conv filters had effectively stretched the network, now the networks with 3 and 4 layers did not train.
+Both the 1 and 2 layer networks yielded improved results over the networks in exp 1 and 2, which used only one
+convolution depth over the entire network. The best results were yielded by the 2 layer deep network, as it had more
+trainable filters than the shallower one. The improved results are probably due to the fact that the varying conv depth
+improved the networks ability to learn more complicated patterns.  
 
 """
 
@@ -115,13 +127,19 @@ An equation: $e^{i\pi} -1 = 0$
 part3_q4 = r"""
 **Your answer:**
 
+The changes we made to our model are:
+    1. Adding dropout layers.
+    2. Adding batch normalization layers.
+    We also tried changing the activation function to Leaky-ReLu but it yielded less than optimal results.
+    
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+The first thing noticeable between our module and the previous ones is that it was able to train also deeper
+networks thanks to the dropout layers which allowed gradient flow to the first layers.
+
+Secondly, the improved model learned much faster than previous ones and yielded better accuracy, the best configuration
+was the four layer one maxing at about 85% test accuracy. We asses that again, dropout played a major role in this 
+improvement as it allowed more gradient flow and made the network classify using multiple features (as at any pass
+some of the features may be dropped out). 
 
 """
 
